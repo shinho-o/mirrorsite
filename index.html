@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1613">
+<title>FARMETRY · 온실 모니터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1613;
+    --bg-elev:#171f1b;
+    --bg-card:#1a231e;
+    --line:#28332c;
+    --line-2:#374539;
+    --text:#e3ebe5;
+    --text-dim:#8fa096;
+    --text-mute:#5a6861;
+    --mint:#82b48a;
+    --cyan:#6a93a8;
+    --mint-dim:#7fa394;
+    --amber:#c9a358;
+    --rose:#b88578;
+    --violet:#8a7fb0;
+    --ok:#82b48a;
+    --warn:#c9a86a;
+    --err:#b87070;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{min-height:100vh;padding:20px 24px 40px;max-width:1400px;margin:0 auto}
+
+  .header{display:flex;align-items:center;justify-content:space-between;padding:8px 0 20px;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap;gap:12px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand-mark{width:34px;height:34px;display:grid;place-items:center}
+  .brand-mark svg{width:28px;height:28px;display:block}
+  .brand-title{font-size:17px;font-weight:600;letter-spacing:-0.01em;color:var(--text)}
+  .brand-title .accent{color:var(--mint);font-weight:600}
+  .brand-sub{font-size:11px;color:var(--text-mute);margin-top:1px}
+  .header-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .status{display:flex;align-items:center;gap:8px;padding:6px 12px;font-size:12px;color:var(--text-dim)}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  .status-dot.off{background:var(--err)}
+
+  .tabs{display:flex;gap:4px;padding:4px;background:var(--bg-card);border:1px solid var(--line);border-radius:12px;margin-bottom:20px;overflow-x:auto}
+  .tab{flex:1;min-width:120px;padding:12px 16px;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;white-space:nowrap}
+  .tab:hover{color:var(--text)}
+  .tab.active{background:color-mix(in srgb,var(--mint) 12%,transparent);color:var(--mint)}
+  .tab-meta{font-size:11px;color:var(--text-mute);margin-left:6px}
+  .tab.active .tab-meta{color:color-mix(in srgb,var(--mint) 75%,transparent)}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+  .card{background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;overflow:hidden;cursor:pointer;transition:border-color .2s}
+  .card:hover{border-color:var(--line-2)}
+  .card.selected{border-color:color-mix(in srgb,var(--mint) 50%,transparent)}
+  .card.selected::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,color-mix(in srgb,var(--mint) 6%,transparent) 0%,transparent 60%);pointer-events:none}
+  .card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .card-label{font-size:12px;color:var(--text-dim);font-weight:500}
+  .card-dot{width:6px;height:6px;border-radius:50%;background:var(--sensor-color,var(--mint));box-shadow:0 0 8px var(--sensor-color,var(--mint))}
+  .card-main{display:flex;align-items:baseline;gap:6px;margin-bottom:8px}
+  .card-value{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:30px;letter-spacing:-0.02em;color:var(--text);font-variant-numeric:tabular-nums}
+  .card-unit{font-size:13px;color:var(--text-dim)}
+  .card-delta{display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--text-dim)}
+  .card-delta.up{color:var(--mint)}
+  .card-delta.down{color:var(--rose)}
+  .card-range{display:flex;justify-content:space-between;font-size:11px;color:var(--text-mute);margin-top:4px}
+  .spark{width:100%;height:36px;margin-top:8px;display:block}
+  .card-status-pill{position:absolute;top:14px;right:14px;font-size:10px;padding:2px 7px;border-radius:3px}
+  .pill-ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+  .pill-warn{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+  .pill-err{background:color-mix(in srgb,var(--err) 15%,transparent);color:var(--err)}
+  .pill-nd{background:color-mix(in srgb,var(--text-mute) 20%,transparent);color:var(--text-mute)}
+  .card.no-data .card-value{color:var(--text-mute)}
+
+  .chart-panel{background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:20px}
+  .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px}
+  .chart-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:10px}
+  .chart-title-sub{color:var(--text-dim);font-weight:400;font-size:12px}
+  .range-pick{display:flex;gap:2px;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2px}
+  .range-btn{background:transparent;border:none;padding:5px 12px;color:var(--text-dim);cursor:pointer;border-radius:4px;font-size:12px}
+  .range-btn.active{background:color-mix(in srgb,var(--mint) 15%,transparent);color:var(--mint)}
+  .chart-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:12px 0;border-top:1px solid var(--line);margin-top:12px}
+  .stat-label{font-size:11px;color:var(--text-mute);margin-bottom:4px}
+  .stat-val{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:500;color:var(--text)}
+  .stat-val .u{color:var(--text-dim);font-size:11px}
+  .chart-wrap{position:relative;width:100%;height:260px}
+  .chart-svg{width:100%;height:100%;display:block;overflow:visible}
+  .chart-empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--text-mute);font-size:12px}
+  .chart-crosshair{position:absolute;pointer-events:none;background:var(--bg-card);border:1px solid var(--line-2);border-radius:6px;padding:7px 10px;font-size:11px;font-family:'JetBrains Mono',monospace;white-space:nowrap;opacity:0;transition:opacity .15s;z-index:5}
+  .chart-crosshair b{color:var(--mint);display:block;font-size:14px;margin-bottom:2px}
+  .chart-crosshair span{color:var(--text-mute)}
+
+  .report{background:var(--bg-card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:20px}
+  .report-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap;gap:12px}
+  .report-title{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600}
+  .report-body{padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .report-summary{font-size:14px;line-height:1.7;color:var(--text)}
+  .report-summary .hl{color:var(--mint);font-weight:500}
+  .report-summary .hlw{color:var(--warn);font-weight:500}
+  .report-meta{font-size:11px;color:var(--text-mute);margin-top:12px}
+  .report-actions{display:flex;flex-direction:column;gap:10px}
+  .action{background:var(--bg-elev);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+  .action-ico{width:26px;height:26px;border-radius:5px;flex-shrink:0;display:grid;place-items:center;font-size:12px;font-weight:600}
+  .action-ico.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+  .action-ico.warn{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+  .action-ico.info{background:color-mix(in srgb,var(--cyan) 15%,transparent);color:var(--cyan)}
+  .action-text{font-size:12px;line-height:1.5;color:var(--text-dim)}
+  .action-text b{color:var(--text);font-weight:500;display:block;margin-bottom:2px;font-size:12.5px}
+
+  .footer{text-align:center;font-size:11px;color:var(--text-mute);padding:16px 0}
+
+  @media (max-width:900px){
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .report-body{grid-template-columns:1fr}
+    .chart-stats{grid-template-columns:repeat(2,1fr)}
+  }
+  @media (max-width:560px){
+    body{padding:12px}
+    .grid{grid-template-columns:repeat(2,1fr);gap:8px}
+    .card{padding:12px}
+    .card-value{font-size:24px}
+    .tab{min-width:90px;padding:10px 12px;font-size:12px}
+    .chart-wrap{height:200px}
+    .chart-panel{padding:14px}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 3 C7 8 6 14 12 21 C18 14 17 8 12 3 Z" fill="#82b48a" fill-opacity="0.85"/>
+        <path d="M12 5 L12 20" stroke="#1a231e" stroke-width="0.9" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-title">farm<span class="accent">etry</span></div>
+      <div class="brand-sub">공개 뷰 · 읽기 전용</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="status">
+      <span class="status-dot off" id="statusDot"></span>
+      <span id="statusTxt">데이터 로드 중</span>
+      <span style="color:var(--text-mute);margin:0 4px">·</span>
+      <span id="lastUpdate" style="color:var(--text-mute)">—</span>
+    </div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-crop="basil">바질<span class="tab-meta">A-1</span></button>
+  <button class="tab" data-crop="kale">케일<span class="tab-meta">A-2</span></button>
+  <button class="tab" data-crop="shiso">시소<span class="tab-meta">B-1</span></button>
+</div>
+
+<div class="grid" id="sensorGrid"></div>
+
+<div class="chart-panel">
+  <div class="chart-header">
+    <div class="chart-title">
+      <span id="chartSensorName">광량</span>
+      <span class="chart-title-sub" id="chartSensorKey">· light (lx)</span>
+    </div>
+    <div class="range-pick" id="rangePick">
+      <button class="range-btn" data-r="6">6H</button>
+      <button class="range-btn active" data-r="24">24H</button>
+      <button class="range-btn" data-r="72">3D</button>
+    </div>
+  </div>
+  <div class="chart-wrap">
+    <svg class="chart-svg" id="chartSvg" preserveAspectRatio="none"></svg>
+    <div class="chart-empty" id="chartEmpty">데이터 없음</div>
+    <div class="chart-crosshair" id="crosshair"></div>
+  </div>
+  <div class="chart-stats">
+    <div><div class="stat-label">현재</div><div class="stat-val" id="stCur">— <span class="u"></span></div></div>
+    <div><div class="stat-label">평균</div><div class="stat-val" id="stAvg">—</div></div>
+    <div><div class="stat-label">최저</div><div class="stat-val" id="stMin">—</div></div>
+    <div><div class="stat-label">최고</div><div class="stat-val" id="stMax">—</div></div>
+  </div>
+</div>
+
+<div class="report">
+  <div class="report-head">
+    <div class="report-title"><span>재배 분석 메모</span></div>
+  </div>
+  <div class="report-body">
+    <div>
+      <div class="report-summary" id="reportSummary">—</div>
+      <div class="report-meta" id="reportMeta">—</div>
+    </div>
+    <div class="report-actions" id="reportActions"></div>
+  </div>
+</div>
+
+<div class="footer">
+  farmetry · <span id="footTime"></span>
+</div>
+
+<script>
+const SENSORS = [
+  {key:"light",  label:"광량", unit:"lx",  sub:"light",      color:"var(--amber)",    decimals:0, good:[8000,35000]},
+  {key:"ph",     label:"pH",   unit:"",    sub:"acidity",    color:"var(--violet)",   decimals:2, good:[5.8,6.5]},
+  {key:"wtemp",  label:"수온", unit:"°C",  sub:"water temp", color:"var(--cyan)",     decimals:1, good:[18,24]},
+  {key:"moist",  label:"수분", unit:"%",   sub:"moisture",   color:"var(--mint)",     decimals:1, good:[55,75]},
+  {key:"atemp",  label:"기온", unit:"°C",  sub:"air temp",   color:"var(--rose)",     decimals:1, good:[20,26]},
+  {key:"humid",  label:"습도", unit:"%",   sub:"humidity",   color:"var(--mint-dim)", decimals:1, good:[60,80]},
+];
+const CROPS = { basil:{name:"바질"}, kale:{name:"케일"}, shiso:{name:"시소"} };
+
+let state = { crop:"basil", selected:"light", range:24, data:null };
+
+function fmt(key, v){
+  const s = SENSORS.find(x=>x.key===key);
+  if(!s || v===null || v===undefined || isNaN(v)) return "—";
+  if(key==="light" && Math.abs(v)>=1000){
+    if(Math.abs(v)>=10000) return (v/1000).toFixed(1).replace(/\.0$/,"")+"k";
+    return (v/1000).toFixed(2)+"k";
+  }
+  return v.toLocaleString(undefined,{minimumFractionDigits:s.decimals,maximumFractionDigits:s.decimals});
+}
+
+function statusFor(sensor, v){
+  if(v===null || v===undefined || isNaN(v)) return {cls:"pill-nd", txt:"미수집"};
+  const [lo,hi]=sensor.good;
+  if(v<lo*0.85 || v>hi*1.15) return {cls:"pill-err", txt:"경고"};
+  if(v<lo || v>hi) return {cls:"pill-warn", txt:"주의"};
+  return {cls:"pill-ok", txt:"정상"};
+}
+
+function rangeSlice(){
+  if(!state.data?.crops?.[state.crop]?.history) return null;
+  const hist = state.data.crops[state.crop].history;
+  const cutoff = Date.now() - state.range*3600*1000;
+  return hist.filter(p => new Date(p.t).getTime() >= cutoff);
+}
+
+function latest(key){
+  const hist = state.data?.crops?.[state.crop]?.history || [];
+  for(let i=hist.length-1;i>=0;i--){
+    const v = hist[i][key];
+    if(v!==null && v!==undefined) return v;
+  }
+  return null;
+}
+
+function renderCards(){
+  const grid = document.getElementById("sensorGrid");
+  const slice = rangeSlice() || [];
+  grid.innerHTML = SENSORS.map(sensor=>{
+    const arr = slice.map(p => p[sensor.key]).filter(v=>v!==null && v!==undefined);
+    const cur = latest(sensor.key);
+    const hasData = arr.length > 0;
+    const prev = arr.length>=5 ? arr[arr.length-5] : (arr[0] ?? null);
+    const delta = (cur!==null && prev!==null) ? cur - prev : 0;
+    const deltaPct = prev ? (delta/prev*100) : 0;
+    const deltaCls = Math.abs(deltaPct)<0.5?"":delta>0?"up":"down";
+    const deltaSym = delta>0?"▲":delta<0?"▼":"·";
+    const min = hasData ? Math.min(...arr) : null;
+    const max = hasData ? Math.max(...arr) : null;
+    const st = statusFor(sensor, cur);
+    const selCls = state.selected===sensor.key?'selected':'';
+    const ndCls = hasData?'':'no-data';
+    return `
+    <div class="card ${selCls} ${ndCls}" data-key="${sensor.key}" style="--sensor-color:${sensor.color}">
+      <div class="card-status-pill ${st.cls}">${st.txt}</div>
+      <div class="card-top">
+        <div class="card-label">${sensor.label} · ${sensor.sub}</div>
+        <div class="card-dot"></div>
+      </div>
+      <div class="card-main">
+        <div class="card-value">${fmt(sensor.key,cur)}</div>
+        <div class="card-unit">${sensor.unit}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="card-delta ${deltaCls}">${hasData?`${deltaSym} ${Math.abs(deltaPct).toFixed(1)}%`:'—'}</span>
+        <span style="font-size:10px;color:var(--text-mute)">1h</span>
+      </div>
+      <svg class="spark" viewBox="0 0 100 36" preserveAspectRatio="none">${hasData?sparkPath(arr,sensor.color):''}</svg>
+      <div class="card-range">
+        <span>min ${fmt(sensor.key,min)}</span>
+        <span>max ${fmt(sensor.key,max)}</span>
+      </div>
+    </div>`;
+  }).join("");
+  grid.querySelectorAll(".card").forEach(el=>{
+    el.addEventListener("click",()=>{ state.selected = el.dataset.key; renderCards(); renderChart(); });
+  });
+}
+
+function sparkPath(arr, color){
+  const min = Math.min(...arr), max = Math.max(...arr);
+  const range = (max-min)||1;
+  const pts = arr.map((v,i)=>{
+    const x = arr.length===1 ? 50 : (i/(arr.length-1))*100;
+    const y = 34 - ((v-min)/range)*30;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  });
+  const path = "M" + pts.join(" L");
+  const fill = "M0,36 L" + pts.join(" L") + " L100,36 Z";
+  const id = color.replace(/[^a-z]/gi,'');
+  return `
+    <defs><linearGradient id="g-${id}" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${fill}" fill="url(#g-${id})"/>
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
+function renderChart(){
+  const sensor = SENSORS.find(s=>s.key===state.selected);
+  const slice = rangeSlice() || [];
+  document.getElementById("chartSensorName").textContent = sensor.label;
+  document.getElementById("chartSensorKey").textContent = `· ${sensor.sub} (${sensor.unit||'—'}) · ${state.range}시간`;
+
+  const svg = document.getElementById("chartSvg");
+  const empty = document.getElementById("chartEmpty");
+  const pairs = slice.map(p => [new Date(p.t).getTime(), p[sensor.key]]).filter(p=>p[1]!==null && p[1]!==undefined && !isNaN(p[1]));
+
+  if(pairs.length < 2){
+    svg.innerHTML = "";
+    empty.style.display = "grid";
+    ["stCur","stAvg","stMin","stMax"].forEach(id=>document.getElementById(id).innerHTML = `— <span class="u">${sensor.unit}</span>`);
+    const c = latest(sensor.key);
+    if(c!==null) document.getElementById("stCur").innerHTML = `${fmt(sensor.key,c)} <span class="u">${sensor.unit}</span>`;
+    return;
+  }
+  empty.style.display = "none";
+
+  const arr = pairs.map(p=>p[1]);
+  const xs = pairs.map(p=>p[0]);
+  const W=1000,H=260;
+  svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+  const padL=46,padR=14,padT=14,padB=30;
+  const chartW=W-padL-padR,chartH=H-padT-padB;
+  const min=Math.min(...arr),max=Math.max(...arr);
+  const pad=(max-min)*0.15||1;
+  const yMin=min-pad,yMax=max+pad,yRange=yMax-yMin;
+  const color = getCssVar(sensor.color.replace("var(","").replace(")",""));
+
+  let gridHtml = "";
+  for(let i=0;i<=4;i++){
+    const y = padT + (i/4)*chartH;
+    const val = yMax - (i/4)*yRange;
+    gridHtml += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2,4"/>`;
+    gridHtml += `<text x="${padL-8}" y="${y+4}" text-anchor="end" fill="var(--text-mute)" font-size="10" font-family="JetBrains Mono">${fmt(sensor.key,val)}</text>`;
+  }
+  const [goodLo,goodHi] = sensor.good;
+  if(goodLo>=yMin && goodHi<=yMax){
+    const yLo = padT + ((yMax-goodHi)/yRange)*chartH;
+    const yHi = padT + ((yMax-goodLo)/yRange)*chartH;
+    gridHtml += `<rect x="${padL}" y="${yLo}" width="${chartW}" height="${yHi-yLo}" fill="${color}" fill-opacity="0.05"/>`;
+  }
+  const t0=xs[0],t1=xs[xs.length-1],tSpan=Math.max(1,t1-t0);
+  for(let i=0;i<=6;i++){
+    const frac=i/6, tx=t0+frac*tSpan;
+    const x=padL+frac*chartW;
+    const d=new Date(tx);
+    const label = state.range<=24 ? `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` : `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}h`;
+    gridHtml += `<text x="${x}" y="${H-padB+18}" text-anchor="middle" fill="var(--text-mute)" font-size="10" font-family="JetBrains Mono">${label}</text>`;
+  }
+  const pts = pairs.map(([t,v])=>{
+    const fx=(t-t0)/tSpan;
+    return [padL+fx*chartW, padT+((yMax-v)/yRange)*chartH, t, v];
+  });
+  const pathD = "M" + pts.map(p=>`${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" L");
+  const fillD = `M ${pts[0][0]},${H-padB} L ` + pts.map(p=>`${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" L") + ` L ${pts[pts.length-1][0]},${H-padB} Z`;
+  const gradId = `chartg-${sensor.key}`;
+  svg.innerHTML = `
+    <defs><linearGradient id="${gradId}" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${gridHtml}
+    <path d="${fillD}" fill="url(#${gradId})"/>
+    <path d="${pathD}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${pts[pts.length-1][0]}" cy="${pts[pts.length-1][1]}" r="4" fill="${color}"/>
+    <rect id="hoverRect" x="${padL}" y="${padT}" width="${chartW}" height="${chartH}" fill="transparent" style="cursor:crosshair"/>`;
+  const cross = document.getElementById("crosshair");
+  const rect = svg.querySelector("#hoverRect");
+  rect.addEventListener("mousemove",ev=>{
+    const box = svg.getBoundingClientRect();
+    const relX = (ev.clientX-box.left)/box.width*W;
+    const px = Math.max(padL,Math.min(W-padR,relX));
+    const frac = (px-padL)/chartW;
+    let idx=0,best=Infinity;
+    for(let i=0;i<pts.length;i++){
+      const d = Math.abs((pts[i][0]-padL)/chartW - frac);
+      if(d<best){best=d;idx=i}
+    }
+    const [cx,cy,t,v] = pts[idx];
+    const scrX=(cx/W)*box.width, scrY=(cy/H)*box.height;
+    cross.style.opacity="1";
+    cross.style.left = Math.min(box.width-120, Math.max(0,scrX-50))+"px";
+    cross.style.top = Math.max(0,scrY-60)+"px";
+    const dt = new Date(t);
+    cross.innerHTML = `<b>${fmt(sensor.key,v)} <span style="color:var(--text-mute);font-size:10px">${sensor.unit}</span></b><span>${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}</span>`;
+  });
+  rect.addEventListener("mouseleave",()=>{cross.style.opacity="0"});
+  const cur=arr[arr.length-1];
+  const avg=arr.reduce((a,b)=>a+b,0)/arr.length;
+  document.getElementById("stCur").innerHTML = `${fmt(sensor.key,cur)} <span class="u">${sensor.unit}</span>`;
+  document.getElementById("stAvg").innerHTML = `${fmt(sensor.key,avg)} <span class="u">${sensor.unit}</span>`;
+  document.getElementById("stMin").innerHTML = `${fmt(sensor.key,min)} <span class="u">${sensor.unit}</span>`;
+  document.getElementById("stMax").innerHTML = `${fmt(sensor.key,max)} <span class="u">${sensor.unit}</span>`;
+}
+
+function getCssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function renderReport(){
+  const r = state.data?.crops?.[state.crop]?.report;
+  const sumEl = document.getElementById("reportSummary");
+  const actEl = document.getElementById("reportActions");
+  const metaEl = document.getElementById("reportMeta");
+  if(!r){
+    sumEl.textContent = "—";
+    actEl.innerHTML = "";
+    metaEl.textContent = "리포트 대기 중";
+    return;
+  }
+  sumEl.innerHTML = escapeHtml(r.summary||"")
+    .replace(/(\d+\.?\d*\s*(°C|lx|%|pH))/g,'<span class="hl">$1</span>')
+    .replace(/(이상|경고|주의|필요|낮음|높음|과다|부족)/g,'<span class="hlw">$1</span>');
+  actEl.innerHTML = (r.actions||[]).slice(0,3).map(a=>{
+    const t=a.type||"info";
+    const sym=t==="ok"?"✓":t==="warn"?"!":"·";
+    return `<div class="action"><div class="action-ico ${t}">${sym}</div><div class="action-text"><b>${escapeHtml(a.title||'')}</b>${escapeHtml(a.detail||'')}</div></div>`;
+  }).join("");
+  metaEl.textContent = state.data.generated_at ? `${new Date(state.data.generated_at).toLocaleString('ko-KR')} · ${CROPS[state.crop].name}` : CROPS[state.crop].name;
+}
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+function setStatus(on, txt){
+  document.getElementById('statusDot').classList.toggle('off', !on);
+  document.getElementById('statusTxt').textContent = txt;
+}
+
+async function loadData(){
+  try{
+    const res = await fetch('./data/latest.json?t='+Date.now(), {cache:'no-store'});
+    if(!res.ok) throw new Error('http '+res.status);
+    state.data = await res.json();
+    setStatus(true, '연결됨');
+    const t = state.data.generated_at ? new Date(state.data.generated_at) : new Date();
+    document.getElementById('lastUpdate').textContent = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')} 갱신`;
+    renderCards();
+    renderChart();
+    renderReport();
+  }catch(e){
+    setStatus(false, '데이터 로드 실패');
+  }
+}
+
+function tickClock(){
+  document.getElementById("footTime").textContent = new Date().toLocaleString('ko-KR');
+}
+
+document.getElementById("tabs").addEventListener("click", e=>{
+  const t = e.target.closest(".tab");
+  if(!t) return;
+  state.crop = t.dataset.crop;
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active", x.dataset.crop===state.crop));
+  renderCards();
+  renderChart();
+  renderReport();
+});
+
+document.getElementById("rangePick").addEventListener("click", e=>{
+  const b = e.target.closest(".range-btn");
+  if(!b) return;
+  state.range = parseInt(b.dataset.r);
+  document.querySelectorAll(".range-btn").forEach(x=>x.classList.toggle("active", x===b));
+  renderCards();
+  renderChart();
+});
+
+tickClock();
+setInterval(tickClock, 1000);
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>
