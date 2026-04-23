@@ -1,8 +1,26 @@
 {
-  "generated_at": null,
+  "generated_at": "2026-04-23T22:19:50.374214+09:00",
   "crops": {
-    "basil": {"history": [], "report": {"summary": "데이터 수집 대기 중입니다.", "actions": []}},
-    "kale":  {"history": [], "report": {"summary": "데이터 수집 대기 중입니다.", "actions": []}},
-    "shiso": {"history": [], "report": {"summary": "데이터 수집 대기 중입니다.", "actions": []}}
+    "basil": {
+      "history": [],
+      "report": {
+        "summary": "데이터 수집 대기 중입니다.",
+        "actions": []
+      }
+    },
+    "kale": {
+      "history": [],
+      "report": {
+        "summary": "데이터 수집 대기 중입니다.",
+        "actions": []
+      }
+    },
+    "shiso": {
+      "history": [],
+      "report": {
+        "summary": "데이터 수집 대기 중입니다.",
+        "actions": []
+      }
+    }
   }
 }
