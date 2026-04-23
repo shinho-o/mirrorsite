@@ -156,6 +156,7 @@
   <button class="tab active" data-crop="basil">바질<span class="tab-meta">A-1</span></button>
   <button class="tab" data-crop="kale">케일<span class="tab-meta">A-2</span></button>
   <button class="tab" data-crop="shiso">시소<span class="tab-meta">B-1</span></button>
+  <button class="tab" data-crop="holybasil">홀리바질<span class="tab-meta">B-2 · 툴시</span></button>
 </div>
 
 <div class="grid" id="sensorGrid"></div>
@@ -211,7 +212,7 @@ const SENSORS = [
   {key:"atemp",  label:"기온", unit:"°C",  sub:"air temp",   color:"var(--rose)",     decimals:1, good:[20,26]},
   {key:"humid",  label:"습도", unit:"%",   sub:"humidity",   color:"var(--mint-dim)", decimals:1, good:[60,80]},
 ];
-const CROPS = { basil:{name:"바질"}, kale:{name:"케일"}, shiso:{name:"시소"} };
+const CROPS = { basil:{name:"바질"}, kale:{name:"케일"}, shiso:{name:"시소"}, holybasil:{name:"홀리바질"} };
 
 let state = { crop:"basil", selected:"light", range:24, data:null };
 
